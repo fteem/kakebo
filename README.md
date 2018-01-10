@@ -76,7 +76,7 @@ Show all expenses for specific month/year combination:
 kakebo expenses list --month=January --year=2018
 ```
 
-## Savings
+### Savings
 
 Get savings for current month:
 ```

@@ -7,11 +7,14 @@ import (
 )
 
 const (
-	databaseName = "kakebo_test.db"
+	path = "kakebo_test.db"
 )
 
 func TestStore(t *testing.T) {
-	store := k.NewStore(databaseName)
+	store := k.NewStore(path)
+	if err := store.Open(); err != nil {
+		panic(err)
+	}
 	defer store.Close()
 
 	setup(store)
@@ -192,7 +195,7 @@ func TestStore(t *testing.T) {
 	teardown(store)
 }
 
-func testStoreIncome(store k.Store, monthYear string, amount int) bool {
+func testStoreIncome(store *k.Store, monthYear string, amount int) bool {
 	err := store.StoreIncome(monthYear, amount)
 	if err != nil {
 		return false
@@ -200,7 +203,7 @@ func testStoreIncome(store k.Store, monthYear string, amount int) bool {
 	return true
 }
 
-func testFetchExpensesForWeek(store k.Store, week int) bool {
+func testFetchExpensesForWeek(store *k.Store, week int) bool {
 	expenses, err := store.FetchExpensesForWeek(week)
 	k.Check(err)
 	for _, expense := range expenses {
@@ -212,7 +215,7 @@ func testFetchExpensesForWeek(store k.Store, week int) bool {
 	return true
 }
 
-func testStoreExpense(store k.Store, expense k.Expense) bool {
+func testStoreExpense(store *k.Store, expense k.Expense) bool {
 	err := store.StoreExpense(expense)
 	if err != nil {
 		return false
@@ -221,7 +224,7 @@ func testStoreExpense(store k.Store, expense k.Expense) bool {
 	return true
 }
 
-func seedExpenses(store k.Store) {
+func seedExpenses(store *k.Store) {
 	expenses := []k.Expense{
 		{
 			ID:          1,
@@ -258,11 +261,11 @@ func seedExpenses(store k.Store) {
 	}
 }
 
-func setup(store k.Store) {
+func setup(store *k.Store) {
 	seedExpenses(store)
 }
 
-func teardown(store k.Store) {
+func teardown(store *k.Store) {
 	err := store.Clear()
 	k.Check(err)
 }

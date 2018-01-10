@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	databaseName = "kakebo.db"
+	path = "kakebo.db"
 )
 
 var (
@@ -43,7 +43,11 @@ var (
 )
 
 func main() {
-	store := NewStore(databaseName)
+	store := NewStore(path)
+	if err := store.Open(); err != nil {
+		fmt.Errorf("Open store: %s", err)
+	}
+
 	defer store.Close()
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {

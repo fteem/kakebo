@@ -15,9 +15,10 @@ var stringTests = []struct {
 			Description: "Vacation in the carribean",
 			Category:    "optional",
 			Amount:      2000,
-			Week:        25,
+			Month:       "January",
+			Year:        "2018",
 		},
-		"Description: Vacation in the carribean | Amount: 2000 | Category: optional | Week: 25",
+		"Description: Vacation in the carribean | Amount: 2000 | Category: optional | Date: January 2018",
 	},
 	{
 		k.Expense{
@@ -25,9 +26,10 @@ var stringTests = []struct {
 			Description: "Pasta",
 			Category:    "survival",
 			Amount:      10,
-			Week:        2,
+			Month:       "October",
+			Year:        "2017",
 		},
-		"Description: Pasta | Amount: 10 | Category: survival | Week: 2",
+		"Description: Pasta | Amount: 10 | Category: survival | Date: October 2017",
 	},
 	{
 		k.Expense{
@@ -35,9 +37,10 @@ var stringTests = []struct {
 			Description: "Nike AirMax '97",
 			Category:    "extra",
 			Amount:      178,
-			Week:        56,
+			Month:       "September",
+			Year:        "2017",
 		},
-		"Description: Nike AirMax '97 | Amount: 178 | Category: extra | Week: 56",
+		"Description: Nike AirMax '97 | Amount: 178 | Category: extra | Date: September 2017",
 	},
 }
 

@@ -19,18 +19,18 @@ func TestStore(t *testing.T) {
 
 	setup(store)
 
-	t.Run("FetchExpensesForWeek(week: 1)", func(t *testing.T) {
-		if !testFetchExpensesForWeek(store, 1) {
+	t.Run("FetchExpensesForWeek(month: January, year: 2018)", func(t *testing.T) {
+		if !testFetchExpensesForMonth(store, "January", "2018") {
 			t.Fail()
 		}
 	})
-	t.Run("FetchExpensesForWeek(week: 2)", func(t *testing.T) {
-		if !testFetchExpensesForWeek(store, 2) {
+	t.Run("FetchExpensesForWeek(month: Ferbuary, year: 2017)", func(t *testing.T) {
+		if !testFetchExpensesForMonth(store, "February", "2017") {
 			t.Fail()
 		}
 	})
-	t.Run("FetchExpensesForWeek(week: 3)", func(t *testing.T) {
-		if !testFetchExpensesForWeek(store, 3) {
+	t.Run("FetchExpensesForWeek(month: March, year: 2017)", func(t *testing.T) {
+		if !testFetchExpensesForMonth(store, "March", "2017") {
 			t.Fail()
 		}
 	})
@@ -41,7 +41,8 @@ func TestStore(t *testing.T) {
 			Description: "Toothpaste",
 			Category:    "survival",
 			Amount:      5,
-			Week:        1,
+			Month:       "July",
+			Year:        "2017",
 		}
 		if !testStoreExpense(store, expense) {
 			t.Fail()
@@ -50,25 +51,29 @@ func TestStore(t *testing.T) {
 
 	t.Run("StoreIncome", func(t *testing.T) {
 		incomes := []struct {
-			monthYear string
-			amount    int
+			month  string
+			year   string
+			amount int
 		}{
 			{
-				monthYear: "December 2017",
-				amount:    2000,
+				month:  "December",
+				year:   "2017",
+				amount: 2000,
 			},
 			{
-				monthYear: "January 2018",
-				amount:    0,
+				month:  "January",
+				year:   "2018",
+				amount: 0,
 			},
 			{
-				monthYear: "February 2018",
-				amount:    10000,
+				month:  "February",
+				year:   "2018",
+				amount: 10000,
 			},
 		}
 
 		for _, tt := range incomes {
-			if !testStoreIncome(store, tt.monthYear, tt.amount) {
+			if !testStoreIncome(store, tt.month, tt.year, tt.amount) {
 				t.Fail()
 			}
 		}
@@ -76,46 +81,33 @@ func TestStore(t *testing.T) {
 
 	t.Run("FetchIncome", func(t *testing.T) {
 		incomes := []struct {
-			monthYear string
-			amount    int
+			month  string
+			year   string
+			amount int
 		}{
 			{
-				monthYear: "December 2017",
-				amount:    2000,
+				month:  "December",
+				year:   "2017",
+				amount: 2000,
 			},
 			{
-				monthYear: "January 2018",
-				amount:    0,
+				month:  "January",
+				year:   "2018",
+				amount: 0,
 			},
 			{
-				monthYear: "February 2018",
-				amount:    10000,
+				month:  "February",
+				year:   "2018",
+				amount: 10000,
 			},
 		}
 		for _, income := range incomes {
-			store.StoreIncome(income.monthYear, income.amount)
+			store.StoreIncome(income.month, income.year, income.amount)
 		}
 
-		cases := []struct {
-			monthYear string
-			expected  int
-		}{
-			{
-				monthYear: "December 2017",
-				expected:  2000,
-			},
-			{
-				monthYear: "October 2017",
-				expected:  0,
-			},
-			{
-				monthYear: "February 2018",
-				expected:  10000,
-			},
-		}
-		for _, tt := range cases {
-			actual, _ := store.FetchIncome(tt.monthYear)
-			if tt.expected != actual {
+		for _, income := range incomes {
+			actual, _ := store.FetchIncome(income.month, income.year)
+			if income.amount != actual {
 				t.Fail()
 			}
 		}
@@ -123,25 +115,29 @@ func TestStore(t *testing.T) {
 
 	t.Run("StoreSavingsGoal", func(t *testing.T) {
 		cases := []struct {
-			monthYear string
-			amount    string
+			month  string
+			year   string
+			amount string
 		}{
 			{
-				monthYear: "January 2018",
-				amount:    "1",
+				month:  "January",
+				year:   "2018",
+				amount: "1",
 			},
 			{
-				monthYear: "December 2017",
-				amount:    "2",
+				month:  "December",
+				year:   "2017",
+				amount: "2",
 			},
 			{
-				monthYear: "September 2018",
-				amount:    "3",
+				month:  "September",
+				year:   "2018",
+				amount: "3",
 			},
 		}
 
 		for _, c := range cases {
-			err := store.StoreSavingsGoal(c.monthYear, c.amount)
+			err := store.StoreSavingsGoal(c.month, c.year, c.amount)
 			if err != nil {
 				t.Fail()
 			}
@@ -150,42 +146,49 @@ func TestStore(t *testing.T) {
 
 	t.Run("FetchSavingsGoal", func(t *testing.T) {
 		seeds := []struct {
-			monthYear string
-			amount    string
+			month  string
+			year   string
+			amount string
 		}{
 			{
-				monthYear: "January 2018",
-				amount:    "1000",
+				month:  "January",
+				year:   "2018",
+				amount: "1000",
 			},
 			{
-				monthYear: "February 2018",
-				amount:    "2000",
+				month:  "February",
+				year:   "2018",
+				amount: "2000",
 			},
 		}
 
 		for _, s := range seeds {
-			store.StoreSavingsGoal(s.monthYear, s.amount)
+			store.StoreSavingsGoal(s.month, s.year, s.amount)
 		}
 
 		cases := []struct {
-			monthYear string
-			expected  int
+			month    string
+			year     string
+			expected int
 		}{
 			{
-				monthYear: "January 2018",
-				expected:  1000,
+				month:    "January",
+				year:     "2018",
+				expected: 1000,
 			},
 			{
-				monthYear: "February 2018",
-				expected:  2000,
+				month:    "February",
+				year:     "2018",
+				expected: 2000,
 			},
 			{
-				monthYear: "October 2016",
-				expected:  0,
+				month:    "October",
+				year:     "2016",
+				expected: 0,
 			},
 		}
 		for _, c := range cases {
-			actual, _ := store.FetchSavingsGoal(c.monthYear)
+			actual, _ := store.FetchSavingsGoal(c.month, c.year)
 			if actual != c.expected {
 				t.Fail()
 			}
@@ -195,19 +198,19 @@ func TestStore(t *testing.T) {
 	teardown(store)
 }
 
-func testStoreIncome(store *k.Store, monthYear string, amount int) bool {
-	err := store.StoreIncome(monthYear, amount)
+func testStoreIncome(store *k.Store, month string, year string, amount int) bool {
+	err := store.StoreIncome(month, year, amount)
 	if err != nil {
 		return false
 	}
 	return true
 }
 
-func testFetchExpensesForWeek(store *k.Store, week int) bool {
-	expenses, err := store.FetchExpensesForWeek(week)
+func testFetchExpensesForMonth(store *k.Store, month string, year string) bool {
+	expenses, err := store.FetchExpensesForMonth(month, year)
 	k.Check(err)
 	for _, expense := range expenses {
-		if expense.Week != week {
+		if expense.Month != month && expense.Year != year {
 			return false
 		}
 	}
@@ -231,28 +234,32 @@ func seedExpenses(store *k.Store) {
 			Description: "Toothpaste",
 			Category:    "survival",
 			Amount:      5,
-			Week:        1,
+			Month:       "June",
+			Year:        "2017",
 		},
 		{
 			ID:          2,
 			Description: "Vacation",
 			Category:    "optional",
 			Amount:      1000,
-			Week:        1,
+			Month:       "July",
+			Year:        "2017",
 		},
 		{
 			ID:          3,
 			Description: "Food",
 			Category:    "survival",
 			Amount:      17,
-			Week:        2,
+			Month:       "October",
+			Year:        "2017",
 		},
 		{
 			ID:          4,
 			Description: "Concert tickets",
 			Category:    "extra",
 			Amount:      120,
-			Week:        2,
+			Month:       "March",
+			Year:        "2017",
 		},
 	}
 

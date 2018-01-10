@@ -59,11 +59,8 @@ func (s *Store) Close() error {
 	return nil
 }
 
-func (s *Store) FetchExpensesForWeek(week int) ([]Expense, error) {
+func (s *Store) FetchExpensesForMonth(month string, year string) ([]Expense, error) {
 	var expenses []Expense
-	if week == 0 {
-		week = CurrentWeekAsInt()
-	}
 
 	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(expensesBucket))
@@ -77,7 +74,7 @@ func (s *Store) FetchExpensesForWeek(week int) ([]Expense, error) {
 			if err != nil {
 				return err
 			}
-			if expense.Week == week {
+			if expense.Month == month && expense.Year == year {
 				expenses = append(expenses, expense)
 			}
 		}
@@ -133,18 +130,21 @@ func (s *Store) StoreExpense(expense Expense) error {
 	})
 }
 
-func (s *Store) StoreIncome(monthYear string, amount int) error {
-	incomeAsString := strconv.Itoa(amount)
+func (s *Store) StoreIncome(month string, year string, amount int) error {
+	key := month + " " + year
+	a := strconv.Itoa(amount)
 	s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(incomesBucket))
-		err := b.Put([]byte(monthYear), []byte(incomeAsString))
+		err := b.Put([]byte(key), []byte(a))
 		return err
 	})
 	return nil
 }
 
-func (s *Store) FetchIncome(key string) (int, error) {
+func (s *Store) FetchIncome(month string, year string) (int, error) {
 	var income int
+	key := month + " " + year
+
 	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(incomesBucket))
 		v := b.Get([]byte(key))
@@ -180,20 +180,24 @@ func (s *Store) FetchIncomes() ([]int, error) {
 	return incomes, nil
 }
 
-func (s *Store) StoreSavingsGoal(monthYear string, amount string) error {
+func (s *Store) StoreSavingsGoal(month string, year string, amount string) error {
+	key := month + " " + year
+
 	s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(savingsBucket))
-		err := b.Put([]byte(monthYear), []byte(amount))
+		err := b.Put([]byte(key), []byte(amount))
 		return err
 	})
 	return nil
 }
 
-func (s *Store) FetchSavingsGoal(monthYear string) (int, error) {
+func (s *Store) FetchSavingsGoal(month string, year string) (int, error) {
 	var savingsGoal int
+	key := month + " " + year
+
 	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(savingsBucket))
-		v := b.Get([]byte(monthYear))
+		v := b.Get([]byte(key))
 		savingsGoal, _ = strconv.Atoi(string(v))
 		return nil
 	})

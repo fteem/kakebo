@@ -7,7 +7,8 @@ type Expense struct {
 	Description string `json:"description"`
 	Category    string `json:"category"`
 	Amount      int    `json:"amount"`
-	Week        int    `json:"week"`
+	Month       string `json:"month"`
+	Year        string `json:"year"`
 }
 
 func (e Expense) String() string {
@@ -20,7 +21,7 @@ func (e Expense) String() string {
 	out += buffer
 	out += "Category: " + e.Category
 	out += buffer
-	out += "Week: " + strconv.Itoa(e.Week)
+	out += "Date: " + e.Month + " " + e.Year
 
 	return out
 }

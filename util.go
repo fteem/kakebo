@@ -30,6 +30,16 @@ func CurrentWeekAsString() string {
 	return s
 }
 
+func CurrentMonth() string {
+	now := time.Now()
+	return now.Month().String()
+}
+
+func CurrentYear() string {
+	now := time.Now()
+	return strconv.Itoa(now.Year())
+}
+
 func MonthAndYear() string {
 	now := time.Now()
 	monthAndYear := now.Month().String() + ", " + strconv.Itoa(now.Year())

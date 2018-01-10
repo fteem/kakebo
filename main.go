@@ -15,19 +15,32 @@ var (
 	app = kingpin.New("kakebo", "A household finance ledger")
 
 	// Income
-	income          = app.Command("income", "Income operations")
+	income = app.Command("income", "Income operations")
+
 	incomeShow      = income.Command("show", "Show income")
+	incomeShowMonth = incomeShow.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	incomeShowYear  = incomeShow.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
+
 	incomeSet       = income.Command("set", "Set income")
 	incomeSetAmount = incomeSet.Arg("amount", "Income amount").Required().Int()
+	incomeSetMonth  = incomeSet.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	incomeSetYear   = incomeSet.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
 
 	// Savings
-	savings = app.Command("savings", "Savings operations")
+	savings      = app.Command("savings", "Savings operations")
+	savingsMonth = savings.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	savingsYear  = savings.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
 
 	// Target
 	target          = app.Command("target", "Savings target operations")
 	targetShow      = target.Command("show", "Show savings target")
+	targetShowMonth = targetShow.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	targetShowYear  = targetShow.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
+
 	targetSet       = target.Command("set", "Set savings target")
 	targetSetAmount = targetSet.Arg("amount", "Target amount").Required().String()
+	targetSetMonth  = targetSet.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	targetSetYear   = targetSet.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
 
 	// Expenses
 	expenses = app.Command("expenses", "Expenses operations")
@@ -36,10 +49,12 @@ var (
 	expensesAddDescription = expensesAdd.Flag("description", "Expense description").Short('d').Required().String()
 	expensesAddAmount      = expensesAdd.Flag("amount", "Expense amount").Short('a').Required().Int()
 	expensesAddCategory    = expensesAdd.Flag("category", "Expense category").Short('c').Required().Enum("survival", "optional", "culture", "extra")
-	expensesAddWeek        = expensesAdd.Flag("week", "Week number").Short('w').Default(CurrentWeekAsString()).Int()
+	expensesAddMonth       = expensesAdd.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	expensesAddYear        = expensesAdd.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
 
-	expensesList     = expenses.Command("list", "List expenses")
-	expensesListWeek = expensesList.Flag("week", "Week number").Short('w').Default(CurrentWeekAsString()).Int()
+	expensesList      = expenses.Command("list", "List expenses")
+	expensesListMonth = expensesList.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	expensesListYear  = expensesList.Flag("yaer", "Year").Short('y').Default(CurrentYear()).String()
 )
 
 func main() {
@@ -52,17 +67,17 @@ func main() {
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case incomeShow.FullCommand():
-		income, err := store.FetchIncome(MonthAndYear())
+		income, err := store.FetchIncome(*incomeShowMonth, *incomeShowYear)
 		Check(err)
 		fmt.Println(income)
 	case incomeSet.FullCommand():
-		err := store.StoreIncome(MonthAndYear(), *incomeSetAmount)
+		err := store.StoreIncome(*incomeSetMonth, *incomeSetYear, *incomeSetAmount)
 		Check(err)
 	case targetSet.FullCommand():
-		err := store.StoreSavingsGoal(MonthAndYear(), *targetSetAmount)
+		err := store.StoreSavingsGoal(*targetSetMonth, *targetSetYear, *targetSetAmount)
 		Check(err)
 	case targetShow.FullCommand():
-		goal, err := store.FetchSavingsGoal(MonthAndYear())
+		goal, err := store.FetchSavingsGoal(*targetShowMonth, *targetShowYear)
 		Check(err)
 		fmt.Println("This month's goal:", goal)
 	case expensesAdd.FullCommand():
@@ -70,22 +85,20 @@ func main() {
 			Description: *expensesAddDescription,
 			Amount:      *expensesAddAmount,
 			Category:    *expensesAddCategory,
-			Week:        *expensesAddWeek,
+			Month:       *expensesAddMonth,
+			Year:        *expensesAddYear,
 		}
 		err := store.StoreExpense(expense)
 		Check(err)
 	case expensesList.FullCommand():
-		expenses, err := store.FetchExpensesForWeek(*expensesListWeek)
+		expenses, err := store.FetchExpensesForMonth(*expensesListMonth, *expensesListYear)
 		Check(err)
 
 		for _, expense := range expenses {
 			fmt.Println(expense)
 		}
 	case savings.FullCommand():
-		expenses, err := store.FetchExpenses()
-		Check(err)
-
-		incomes, err := store.FetchIncomes()
+		expenses, err := store.FetchExpensesForMonth(*savingsMonth, *savingsYear)
 		Check(err)
 
 		expensesSum := 0
@@ -93,11 +106,12 @@ func main() {
 			expensesSum += expenses[i].Amount
 		}
 
-		incomesSum := 0
-		for i := 0; i < len(incomes); i++ {
-			incomesSum += incomes[i]
-		}
+		income, err := store.FetchIncome(*savingsMonth, *savingsYear)
+		Check(err)
 
-		fmt.Println("Total savings: ", incomesSum-expensesSum)
+		goal, err := store.FetchSavingsGoal(*savingsMonth, *savingsYear)
+		Check(err)
+
+		fmt.Println("Savings goal:", goal, "Total savings:", income-expensesSum)
 	}
 }

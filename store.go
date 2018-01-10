@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	incomesBucket  = "incomes"
-	expensesBucket = "expenses"
-	savingsBucket  = "savings"
+	incomesBucket     = "incomes"
+	expensesBucket    = "expenses"
+	savingsBucket     = "savings"
+	connectionTimeout = 1 * time.Second
 )
 
 type StoreConfiguration struct {
@@ -19,13 +20,13 @@ type StoreConfiguration struct {
 	DbName            string
 }
 
-func Connection(config StoreConfiguration) (*bolt.DB, error) {
-	// Open database connection
-	db, err := bolt.Open(config.DbName, 0600, &bolt.Options{Timeout: config.ConnectionTimeout})
+type Store struct {
+	db *bolt.DB
+}
 
-	if err != nil {
-		return nil, err
-	}
+func NewStore(dbName string) Store {
+	// Open database connection
+	db, _ := bolt.Open(dbName, 0600, &bolt.Options{Timeout: connectionTimeout})
 
 	// Create config bucket if not present
 	db.Update(func(tx *bolt.Tx) error {
@@ -54,16 +55,16 @@ func Connection(config StoreConfiguration) (*bolt.DB, error) {
 		return nil
 	})
 
-	return db, nil
+	return Store{db: db}
 }
 
-func FetchExpensesForWeek(db *bolt.DB, week int) ([]Expense, error) {
+func (s Store) FetchExpensesForWeek(week int) ([]Expense, error) {
 	var expenses []Expense
 	if week == 0 {
 		week = CurrentWeekAsInt()
 	}
 
-	err := db.View(func(tx *bolt.Tx) error {
+	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(expensesBucket))
 
 		c := b.Cursor()
@@ -89,8 +90,8 @@ func FetchExpensesForWeek(db *bolt.DB, week int) ([]Expense, error) {
 	return expenses, nil
 }
 
-func StoreExpense(db *bolt.DB, expense Expense) error {
-	return db.Update(func(tx *bolt.Tx) error {
+func (s Store) StoreExpense(expense Expense) error {
+	return s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(expensesBucket))
 
 		id, _ := b.NextSequence()
@@ -104,9 +105,9 @@ func StoreExpense(db *bolt.DB, expense Expense) error {
 	})
 }
 
-func StoreIncome(db *bolt.DB, monthYear string, amount int) error {
+func (s Store) StoreIncome(monthYear string, amount int) error {
 	incomeAsString := strconv.Itoa(amount)
-	db.Update(func(tx *bolt.Tx) error {
+	s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(incomesBucket))
 		err := b.Put([]byte(monthYear), []byte(incomeAsString))
 		return err
@@ -114,9 +115,9 @@ func StoreIncome(db *bolt.DB, monthYear string, amount int) error {
 	return nil
 }
 
-func FetchIncome(db *bolt.DB, key string) (int, error) {
+func (s Store) FetchIncome(key string) (int, error) {
 	var income int
-	err := db.View(func(tx *bolt.Tx) error {
+	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(incomesBucket))
 		v := b.Get([]byte(key))
 		income, _ = strconv.Atoi(string(v))
@@ -130,8 +131,8 @@ func FetchIncome(db *bolt.DB, key string) (int, error) {
 	return income, nil
 }
 
-func StoreSavingsGoal(db *bolt.DB, monthYear string, amount string) error {
-	db.Update(func(tx *bolt.Tx) error {
+func (s Store) StoreSavingsGoal(monthYear string, amount string) error {
+	s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(savingsBucket))
 		err := b.Put([]byte(monthYear), []byte(amount))
 		return err
@@ -139,9 +140,9 @@ func StoreSavingsGoal(db *bolt.DB, monthYear string, amount string) error {
 	return nil
 }
 
-func FetchSavingsGoal(db *bolt.DB, monthYear string) (int, error) {
+func (s Store) FetchSavingsGoal(monthYear string) (int, error) {
 	var savingsGoal int
-	err := db.View(func(tx *bolt.Tx) error {
+	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(savingsBucket))
 		v := b.Get([]byte(monthYear))
 		savingsGoal, _ = strconv.Atoi(string(v))
@@ -154,22 +155,22 @@ func FetchSavingsGoal(db *bolt.DB, monthYear string) (int, error) {
 	return savingsGoal, nil
 }
 
-func ClearStore(db *bolt.DB) error {
-	db.Update(func(tx *bolt.Tx) error {
+func (s Store) Clear() error {
+	s.db.Update(func(tx *bolt.Tx) error {
 		err := tx.DeleteBucket([]byte(incomesBucket))
 		if err != nil {
 			return err
 		}
 		return nil
 	})
-	db.Update(func(tx *bolt.Tx) error {
+	s.db.Update(func(tx *bolt.Tx) error {
 		err := tx.DeleteBucket([]byte(expensesBucket))
 		if err != nil {
 			return err
 		}
 		return nil
 	})
-	db.Update(func(tx *bolt.Tx) error {
+	s.db.Update(func(tx *bolt.Tx) error {
 		err := tx.DeleteBucket([]byte(savingsBucket))
 		if err != nil {
 			return err
@@ -177,4 +178,8 @@ func ClearStore(db *bolt.DB) error {
 		return nil
 	})
 	return nil
+}
+
+func (s Store) Close() {
+	s.db.Close()
 }

@@ -3,17 +3,15 @@ package main
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-var (
-	storeConfiguration = StoreConfiguration{
-		ConnectionTimeout: 1 * time.Second,
-		DbName:            "kakebo.db",
-	}
+const (
+	databaseName = "kakebo.db"
+)
 
+var (
 	app = kingpin.New("kakebo", "A household finance ledger")
 
 	// Income
@@ -45,23 +43,22 @@ var (
 )
 
 func main() {
-	db, err := Connection(storeConfiguration)
-	Check(err)
-	defer db.Close()
+	store := NewStore(databaseName)
+	defer store.Close()
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case incomeShow.FullCommand():
-		income, err := FetchIncome(db, MonthAndYear())
+		income, err := store.FetchIncome(MonthAndYear())
 		Check(err)
 		fmt.Println(income)
 	case incomeSet.FullCommand():
-		err := StoreIncome(db, MonthAndYear(), *incomeSetAmount)
+		err := store.StoreIncome(MonthAndYear(), *incomeSetAmount)
 		Check(err)
 	case targetSet.FullCommand():
-		err := StoreSavingsGoal(db, MonthAndYear(), *targetSetAmount)
+		err := store.StoreSavingsGoal(MonthAndYear(), *targetSetAmount)
 		Check(err)
 	case targetShow.FullCommand():
-		goal, err := FetchSavingsGoal(db, MonthAndYear())
+		goal, err := store.FetchSavingsGoal(MonthAndYear())
 		Check(err)
 		fmt.Println("This month's goal:", goal)
 	case expensesAdd.FullCommand():
@@ -71,10 +68,10 @@ func main() {
 			Category:    *expensesAddCategory,
 			Week:        *expensesAddWeek,
 		}
-		err := StoreExpense(db, expense)
+		err := store.StoreExpense(expense)
 		Check(err)
 	case expensesList.FullCommand():
-		expenses, err := FetchExpensesForWeek(db, *expensesListWeek)
+		expenses, err := store.FetchExpensesForWeek(*expensesListWeek)
 		Check(err)
 
 		for _, expense := range expenses {

@@ -2,38 +2,32 @@ package main_test
 
 import (
 	"testing"
-	"time"
 
-	"github.com/boltdb/bolt"
 	k "github.com/fteem/kakebo"
 )
 
-var (
-	storeConfiguration = k.StoreConfiguration{
-		ConnectionTimeout: 1 * time.Second,
-		DbName:            "kakebo_test.db",
-	}
+const (
+	databaseName = "kakebo_test.db"
 )
 
 func TestStore(t *testing.T) {
-	db, err := k.Connection(storeConfiguration)
-	k.Check(err)
-	defer db.Close()
+	store := k.NewStore(databaseName)
+	defer store.Close()
 
-	setup(db)
+	setup(store)
 
 	t.Run("FetchExpensesForWeek(week: 1)", func(t *testing.T) {
-		if !testFetchExpensesForWeek(db, 1) {
+		if !testFetchExpensesForWeek(store, 1) {
 			t.Fail()
 		}
 	})
 	t.Run("FetchExpensesForWeek(week: 2)", func(t *testing.T) {
-		if !testFetchExpensesForWeek(db, 2) {
+		if !testFetchExpensesForWeek(store, 2) {
 			t.Fail()
 		}
 	})
 	t.Run("FetchExpensesForWeek(week: 3)", func(t *testing.T) {
-		if !testFetchExpensesForWeek(db, 3) {
+		if !testFetchExpensesForWeek(store, 3) {
 			t.Fail()
 		}
 	})
@@ -46,7 +40,7 @@ func TestStore(t *testing.T) {
 			Amount:      5,
 			Week:        1,
 		}
-		if !testStoreExpense(db, expense) {
+		if !testStoreExpense(store, expense) {
 			t.Fail()
 		}
 	})
@@ -71,7 +65,7 @@ func TestStore(t *testing.T) {
 		}
 
 		for _, tt := range incomes {
-			if !testStoreIncome(db, tt.monthYear, tt.amount) {
+			if !testStoreIncome(store, tt.monthYear, tt.amount) {
 				t.Fail()
 			}
 		}
@@ -96,7 +90,7 @@ func TestStore(t *testing.T) {
 			},
 		}
 		for _, income := range incomes {
-			k.StoreIncome(db, income.monthYear, income.amount)
+			store.StoreIncome(income.monthYear, income.amount)
 		}
 
 		cases := []struct {
@@ -117,7 +111,7 @@ func TestStore(t *testing.T) {
 			},
 		}
 		for _, tt := range cases {
-			actual, _ := k.FetchIncome(db, tt.monthYear)
+			actual, _ := store.FetchIncome(tt.monthYear)
 			if tt.expected != actual {
 				t.Fail()
 			}
@@ -144,7 +138,7 @@ func TestStore(t *testing.T) {
 		}
 
 		for _, c := range cases {
-			err := k.StoreSavingsGoal(db, c.monthYear, c.amount)
+			err := store.StoreSavingsGoal(c.monthYear, c.amount)
 			if err != nil {
 				t.Fail()
 			}
@@ -167,7 +161,7 @@ func TestStore(t *testing.T) {
 		}
 
 		for _, s := range seeds {
-			k.StoreSavingsGoal(db, s.monthYear, s.amount)
+			store.StoreSavingsGoal(s.monthYear, s.amount)
 		}
 
 		cases := []struct {
@@ -188,26 +182,26 @@ func TestStore(t *testing.T) {
 			},
 		}
 		for _, c := range cases {
-			actual, _ := k.FetchSavingsGoal(db, c.monthYear)
+			actual, _ := store.FetchSavingsGoal(c.monthYear)
 			if actual != c.expected {
 				t.Fail()
 			}
 		}
 	})
 
-	teardown(db)
+	teardown(store)
 }
 
-func testStoreIncome(db *bolt.DB, monthYear string, amount int) bool {
-	err := k.StoreIncome(db, monthYear, amount)
+func testStoreIncome(store k.Store, monthYear string, amount int) bool {
+	err := store.StoreIncome(monthYear, amount)
 	if err != nil {
 		return false
 	}
 	return true
 }
 
-func testFetchExpensesForWeek(db *bolt.DB, week int) bool {
-	expenses, err := k.FetchExpensesForWeek(db, week)
+func testFetchExpensesForWeek(store k.Store, week int) bool {
+	expenses, err := store.FetchExpensesForWeek(week)
 	k.Check(err)
 	for _, expense := range expenses {
 		if expense.Week != week {
@@ -218,8 +212,8 @@ func testFetchExpensesForWeek(db *bolt.DB, week int) bool {
 	return true
 }
 
-func testStoreExpense(db *bolt.DB, expense k.Expense) bool {
-	err := k.StoreExpense(db, expense)
+func testStoreExpense(store k.Store, expense k.Expense) bool {
+	err := store.StoreExpense(expense)
 	if err != nil {
 		return false
 	}
@@ -227,7 +221,7 @@ func testStoreExpense(db *bolt.DB, expense k.Expense) bool {
 	return true
 }
 
-func seedExpenses(db *bolt.DB) {
+func seedExpenses(store k.Store) {
 	expenses := []k.Expense{
 		{
 			ID:          1,
@@ -260,15 +254,15 @@ func seedExpenses(db *bolt.DB) {
 	}
 
 	for _, expense := range expenses {
-		k.StoreExpense(db, expense)
+		store.StoreExpense(expense)
 	}
 }
 
-func setup(db *bolt.DB) {
-	seedExpenses(db)
+func setup(store k.Store) {
+	seedExpenses(store)
 }
 
-func teardown(db *bolt.DB) {
-	err := k.ClearStore(db)
+func teardown(store k.Store) {
+	err := store.Clear()
 	k.Check(err)
 }

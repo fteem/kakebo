@@ -31,16 +31,16 @@ var (
 	savingsMonth = savings.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
 	savingsYear  = savings.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
 
-	// Target
-	target          = app.Command("target", "Savings target operations")
-	targetShow      = target.Command("show", "Show savings target")
-	targetShowMonth = targetShow.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
-	targetShowYear  = targetShow.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
+	// Goal
+	goal          = app.Command("goal", "Savings goal operations")
+	goalShow      = goal.Command("show", "Show savings goal")
+	goalShowMonth = goalShow.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	goalShowYear  = goalShow.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
 
-	targetSet       = target.Command("set", "Set savings target")
-	targetSetAmount = targetSet.Arg("amount", "Target amount").Required().String()
-	targetSetMonth  = targetSet.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
-	targetSetYear   = targetSet.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
+	goalSet       = goal.Command("set", "Set savings goal")
+	goalSetAmount = goalSet.Arg("amount", "Goal amount").Required().String()
+	goalSetMonth  = goalSet.Flag("month", "Month").Short('m').Default(CurrentMonth()).String()
+	goalSetYear   = goalSet.Flag("year", "Year").Short('y').Default(CurrentYear()).String()
 
 	// Expenses
 	expenses = app.Command("expenses", "Expenses operations")
@@ -73,11 +73,11 @@ func main() {
 	case incomeSet.FullCommand():
 		err := store.StoreIncome(*incomeSetMonth, *incomeSetYear, *incomeSetAmount)
 		Check(err)
-	case targetSet.FullCommand():
-		err := store.StoreSavingsGoal(*targetSetMonth, *targetSetYear, *targetSetAmount)
+	case goalSet.FullCommand():
+		err := store.StoreSavingsGoal(*goalSetMonth, *goalSetYear, *goalSetAmount)
 		Check(err)
-	case targetShow.FullCommand():
-		goal, err := store.FetchSavingsGoal(*targetShowMonth, *targetShowYear)
+	case goalShow.FullCommand():
+		goal, err := store.FetchSavingsGoal(*goalShowMonth, *goalShowYear)
 		Check(err)
 		fmt.Println("This month's goal:", goal)
 	case expensesAdd.FullCommand():

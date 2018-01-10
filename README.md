@@ -12,17 +12,17 @@ expenses in four different categories:
 
 ### Monthly configuration
 
-Set income for current month: ✅
+Set income for current month:
 ```
 kakebo income set 12345
 ```
 
-Show income for current month: ✅
+Show income for current month:
 ```
 kakebo income show
 ```
 
-Set savings target for current month:✅
+Set savings target for current month:
 ```
 kakebo target set 12345
 ```
@@ -35,17 +35,17 @@ kakebo savings
 
 ### Expenses
 
-Add expense:✅
+Add expense:
 ```
 kakebo expenses add --description=Whatever --amount=123 --category=survival --week=2
 ```
 
-Show all expenses for current week:✅
+Show all expenses for current week:
 ```
 kakebo expenses list
 ```
 
-Show all expenses for week:✅
+Show all expenses for week:
 ```
 kakebo expenses list --week=3
 ```

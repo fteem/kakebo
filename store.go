@@ -23,7 +23,6 @@ func NewStore(path string) *Store {
 	return &Store{
 		path: path,
 	}
-
 }
 
 func (s *Store) Path() string { return s.path }
@@ -92,6 +91,33 @@ func (s *Store) FetchExpensesForWeek(week int) ([]Expense, error) {
 	return expenses, nil
 }
 
+func (s *Store) FetchExpenses() ([]Expense, error) {
+	var expenses []Expense
+
+	err := s.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(expensesBucket))
+
+		c := b.Cursor()
+
+		var expense Expense
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			err := json.Unmarshal(v, &expense)
+			if err != nil {
+				return err
+			}
+			expenses = append(expenses, expense)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return expenses, nil
+}
+
 func (s *Store) StoreExpense(expense Expense) error {
 	return s.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(expensesBucket))
@@ -131,6 +157,27 @@ func (s *Store) FetchIncome(key string) (int, error) {
 	}
 
 	return income, nil
+}
+
+func (s *Store) FetchIncomes() ([]int, error) {
+	var incomes []int
+	err := s.db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(incomesBucket))
+
+		c := b.Cursor()
+
+		for k, v := c.First(); k != nil; k, v = c.Next() {
+			amount, _ := strconv.Atoi(string(v))
+			incomes = append(incomes, amount)
+		}
+		return nil
+	})
+
+	if err != nil {
+		return []int{}, err
+	}
+
+	return incomes, nil
 }
 
 func (s *Store) StoreSavingsGoal(monthYear string, amount string) error {

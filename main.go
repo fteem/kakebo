@@ -81,5 +81,23 @@ func main() {
 		for _, expense := range expenses {
 			fmt.Println(expense)
 		}
+	case savings.FullCommand():
+		expenses, err := store.FetchExpenses()
+		Check(err)
+
+		incomes, err := store.FetchIncomes()
+		Check(err)
+
+		expensesSum := 0
+		for i := 0; i < len(expenses); i++ {
+			expensesSum += expenses[i].Amount
+		}
+
+		incomesSum := 0
+		for i := 0; i < len(incomes); i++ {
+			incomesSum += incomes[i]
+		}
+
+		fmt.Println("Total savings: ", incomesSum-expensesSum)
 	}
 }

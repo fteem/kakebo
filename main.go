@@ -3,14 +3,17 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/alecthomas/kingpin.v2"
-
-	"github.com/fteem/kakebo/src/store"
-	"github.com/fteem/kakebo/src/util"
 )
 
 var (
+	storeConfiguration = StoreConfiguration{
+		ConnectionTimeout: 1 * time.Second,
+		DbName:            "kakebo.db",
+	}
+
 	app = kingpin.New("kakebo", "A household finance ledger")
 
 	// Income
@@ -35,44 +38,44 @@ var (
 	expensesAddDescription = expensesAdd.Flag("description", "Expense description").Short('d').Required().String()
 	expensesAddAmount      = expensesAdd.Flag("amount", "Expense amount").Short('a').Required().Int()
 	expensesAddCategory    = expensesAdd.Flag("category", "Expense category").Short('c').Required().Enum("survival", "optional", "culture", "extra")
-	expensesAddWeek        = expensesAdd.Flag("week", "Week number").Short('w').Default(util.CurrentWeekAsString()).Int()
+	expensesAddWeek        = expensesAdd.Flag("week", "Week number").Short('w').Default(CurrentWeekAsString()).Int()
 
 	expensesList     = expenses.Command("list", "List expenses")
-	expensesListWeek = expensesList.Flag("week", "Week number").Short('w').Default(util.CurrentWeekAsString()).Int()
+	expensesListWeek = expensesList.Flag("week", "Week number").Short('w').Default(CurrentWeekAsString()).Int()
 )
 
 func main() {
-	db, err := store.Connection()
-	util.Check(err)
+	db, err := Connection(storeConfiguration)
+	Check(err)
 	defer db.Close()
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case incomeShow.FullCommand():
-		income, err := store.FetchIncome(db, util.MonthAndYear())
-		util.Check(err)
+		income, err := FetchIncome(db, MonthAndYear())
+		Check(err)
 		fmt.Println(income)
 	case incomeSet.FullCommand():
-		err := store.StoreIncome(db, util.MonthAndYear(), *incomeSetAmount)
-		util.Check(err)
+		err := StoreIncome(db, MonthAndYear(), *incomeSetAmount)
+		Check(err)
 	case targetSet.FullCommand():
-		err := store.StoreSavingsGoal(db, util.MonthAndYear(), *targetSetAmount)
-		util.Check(err)
+		err := StoreSavingsGoal(db, MonthAndYear(), *targetSetAmount)
+		Check(err)
 	case targetShow.FullCommand():
-		goal, err := store.FetchSavingsGoal(db, util.MonthAndYear())
-		util.Check(err)
+		goal, err := FetchSavingsGoal(db, MonthAndYear())
+		Check(err)
 		fmt.Println("This month's goal:", goal)
 	case expensesAdd.FullCommand():
-		expense := store.Expense{
+		expense := Expense{
 			Description: *expensesAddDescription,
 			Amount:      *expensesAddAmount,
 			Category:    *expensesAddCategory,
 			Week:        *expensesAddWeek,
 		}
-		err := store.StoreExpense(db, expense)
-		util.Check(err)
+		err := StoreExpense(db, expense)
+		Check(err)
 	case expensesList.FullCommand():
-		expenses, err := store.FetchExpensesForWeek(db, *expensesListWeek)
-		util.Check(err)
+		expenses, err := FetchExpensesForWeek(db, *expensesListWeek)
+		Check(err)
 
 		for _, expense := range expenses {
 			fmt.Println(expense)

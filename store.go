@@ -1,4 +1,4 @@
-package store
+package main
 
 import (
 	"encoding/json"
@@ -6,48 +6,22 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
-	"github.com/fteem/kakebo/src/util"
 )
 
-// Names
 const (
-	dbName         = "kakebo.db"
 	incomesBucket  = "incomes"
 	expensesBucket = "expenses"
 	savingsBucket  = "savings"
 )
 
-// Settings
-const (
-	connectionTimeout = 1 * time.Second
-)
-
-type Expense struct {
-	ID          int    `json:"id"`
-	Description string `json:"description"`
-	Category    string `json:"category"`
-	Amount      int    `json:"amount"`
-	Week        int    `json:"week"`
+type StoreConfiguration struct {
+	ConnectionTimeout time.Duration
+	DbName            string
 }
 
-func (e Expense) String() string {
-	buffer := " | "
-
-	out := ""
-	out += "Description: " + e.Description
-	out += buffer
-	out += "Amount: " + strconv.Itoa(e.Amount)
-	out += buffer
-	out += "Category: " + e.Category
-	out += buffer
-	out += "Week: " + strconv.Itoa(e.Week)
-
-	return out
-}
-
-func Connection() (*bolt.DB, error) {
+func Connection(config StoreConfiguration) (*bolt.DB, error) {
 	// Open database connection
-	db, err := bolt.Open(dbName, 0600, &bolt.Options{Timeout: connectionTimeout})
+	db, err := bolt.Open(config.DbName, 0600, &bolt.Options{Timeout: config.ConnectionTimeout})
 
 	if err != nil {
 		return nil, err
@@ -86,7 +60,7 @@ func Connection() (*bolt.DB, error) {
 func FetchExpensesForWeek(db *bolt.DB, week int) ([]Expense, error) {
 	var expenses []Expense
 	if week == 0 {
-		week = util.CurrentWeekAsInt()
+		week = CurrentWeekAsInt()
 	}
 
 	err := db.View(func(tx *bolt.Tx) error {
@@ -126,15 +100,15 @@ func StoreExpense(db *bolt.DB, expense Expense) error {
 			return err
 		}
 
-		return b.Put(util.Itob(expense.ID), jsonBlob)
+		return b.Put(Itob(expense.ID), jsonBlob)
 	})
 }
 
-func StoreIncome(db *bolt.DB, key string, amount int) error {
+func StoreIncome(db *bolt.DB, monthYear string, amount int) error {
 	incomeAsString := strconv.Itoa(amount)
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(incomesBucket))
-		err := b.Put([]byte(key), []byte(incomeAsString))
+		err := b.Put([]byte(monthYear), []byte(incomeAsString))
 		return err
 	})
 	return nil
@@ -156,20 +130,20 @@ func FetchIncome(db *bolt.DB, key string) (int, error) {
 	return income, nil
 }
 
-func StoreSavingsGoal(db *bolt.DB, key string, amount string) error {
+func StoreSavingsGoal(db *bolt.DB, monthYear string, amount string) error {
 	db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(savingsBucket))
-		err := b.Put([]byte(key), []byte(amount))
+		err := b.Put([]byte(monthYear), []byte(amount))
 		return err
 	})
 	return nil
 }
 
-func FetchSavingsGoal(db *bolt.DB, key string) (int, error) {
+func FetchSavingsGoal(db *bolt.DB, monthYear string) (int, error) {
 	var savingsGoal int
 	err := db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(savingsBucket))
-		v := b.Get([]byte(key))
+		v := b.Get([]byte(monthYear))
 		savingsGoal, _ = strconv.Atoi(string(v))
 		return nil
 	})
@@ -178,4 +152,29 @@ func FetchSavingsGoal(db *bolt.DB, key string) (int, error) {
 		return 0, err
 	}
 	return savingsGoal, nil
+}
+
+func ClearStore(db *bolt.DB) error {
+	db.Update(func(tx *bolt.Tx) error {
+		err := tx.DeleteBucket([]byte(incomesBucket))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	db.Update(func(tx *bolt.Tx) error {
+		err := tx.DeleteBucket([]byte(expensesBucket))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	db.Update(func(tx *bolt.Tx) error {
+		err := tx.DeleteBucket([]byte(savingsBucket))
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	return nil
 }

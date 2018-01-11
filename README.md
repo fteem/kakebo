@@ -81,7 +81,6 @@ kakebo expenses list --month=January --year=2018
 Get savings for current month:
 ```
 kakebo savings
-# => 10000
 ```
 
 Get savings for specific month/year combination:
